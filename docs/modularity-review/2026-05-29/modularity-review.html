@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modularity Review</title>
+<style>
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+    --max-width: 820px;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --bg-tertiary: #eef1f5;
+    --text: #1a1a1a;
+    --text-secondary: #4a5568;
+    --text-muted: #718096;
+    --border: #e2e8f0;
+    --accent: #2b6cb0;
+    --accent-light: #ebf4ff;
+    --severity-critical: #c53030;
+    --severity-critical-bg: #fff5f5;
+    --severity-significant: #c05621;
+    --severity-significant-bg: #fffaf0;
+    --severity-minor: #2b6cb0;
+    --severity-minor-bg: #ebf8ff;
+    --table-stripe: #f7fafc;
+    --link: #2b6cb0;
+    --link-hover: #1a4971;
+    --shadow: rgba(0, 0, 0, 0.06);
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1a1a1a;
+    --bg-secondary: #242424;
+    --bg-tertiary: #2e2e2e;
+    --text: #e2e2e2;
+    --text-secondary: #a0a0a0;
+    --text-muted: #717171;
+    --border: #333333;
+    --accent: #b0b0b0;
+    --accent-light: #2a2a2a;
+    --severity-critical: #fc8181;
+    --severity-critical-bg: #2d1b1b;
+    --severity-significant: #f6ad55;
+    --severity-significant-bg: #2d2415;
+    --severity-minor: #a0a0a0;
+    --severity-minor-bg: #282828;
+    --table-stripe: #222222;
+    --link: #e0c97f;
+    --link-hover: #f0dca0;
+    --shadow: rgba(0, 0, 0, 0.2);
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    margin: 0;
+    padding: 2rem 1.5rem;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  .container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: var(--text);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    z-index: 100;
+  }
+
+  .theme-toggle:hover {
+    background: var(--bg-tertiary);
+  }
+
+  /* Typography */
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem 0;
+    color: var(--text);
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 2.5rem 0 1rem 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.8rem 0 0.6rem 0;
+    color: var(--text);
+  }
+
+  p {
+    margin: 0 0 1rem 0;
+    color: var(--text-secondary);
+  }
+
+  a {
+    color: var(--link);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--link-hover);
+    border-bottom-color: var(--link-hover);
+  }
+
+  /* Metadata */
+  .meta {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .meta strong {
+    color: var(--text-secondary);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  td {
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  tr:nth-child(even) td {
+    background: var(--table-stripe);
+  }
+
+  /* Severity badges */
+  .severity {
+    display: inline-block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .severity-critical {
+    color: var(--severity-critical);
+    background: var(--severity-critical-bg);
+  }
+
+  .severity-significant {
+    color: var(--severity-significant);
+    background: var(--severity-significant-bg);
+  }
+
+  .severity-minor {
+    color: var(--severity-minor);
+    background: var(--severity-minor-bg);
+  }
+
+  /* Issue cards */
+  .issue {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+
+  .issue h2 {
+    margin-top: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .issue h3 {
+    font-size: 1rem;
+  }
+
+  .issue-meta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  /* Lists */
+  ul, ol {
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+  }
+
+  li {
+    margin-bottom: 0.35rem;
+  }
+
+  /* Code */
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--bg-tertiary);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  /* Horizontal rule */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 3rem 0 1.5rem 0;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .footer a {
+    color: var(--text-muted);
+    border-bottom-color: var(--border);
+  }
+
+  .footer a:hover {
+    color: var(--link);
+  }
+
+  /* Print */
+  @media print {
+    .theme-toggle { display: none; }
+    body { padding: 0; }
+    .issue { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+  <span id="theme-icon"></span>
+</button>
+
+<div class="container">
+  <h1>Modularity Review</h1>
+  <div class="meta">
+    <strong>Scope</strong>: <code>python-cli-hexagonal</code> template — entire codebase (<code>domain/</code>, <code>adapters/</code>, <code>entrypoint/</code>, wiring, and the test doubles that integrate with the ports)<br>
+    <strong>Date</strong>: 2026-05-29
+  </div>
+
+  <h2>Executive Summary</h2>
+  <p><code>python-cli-hexagonal</code> is a copy-and-extend <strong>template</strong> for building Typer-based command-line tools with a hexagonal (ports &amp; adapters) layout. Its real deliverable is not the bundled <code>greet</code> example — that is a placeholder — but the <em>structure and its guardrails</em>: the <code>domain → adapters → entrypoint</code> dependency direction enforced by <code>tach</code>, the <code>Protocol</code>-based ports, and the documented recipe for adding new commands. As a piece of <a href="https://coupling.dev/posts/core-concepts/modularity/">modular design</a>, the template is largely <strong>healthy</strong>: integration strength is deliberately kept low (frozen dataclasses and a structural <code>Protocol</code>), distance is low (one package, one process), and the example's volatility is negligible, so most integrations are <a href="https://coupling.dev/posts/core-concepts/balance/">balanced</a> by construction. The most important finding is that the template's central promise — that adapters conform to domain ports — relies on <a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">contract coupling</a> that <strong>no tool in the toolchain actually verifies</strong>: <code>tach</code> checks import direction, <code>ruff</code> checks style, <code>pytest</code> checks the one example's behavior, but nothing checks that an adapter satisfies its port. Because adding ports and adapters is exactly what adopters do most, that unverified contract sits in the template's highest-<a href="https://coupling.dev/posts/dimensions-of-coupling/volatility/">volatility</a> area.</p>
+
+  <h2>Coupling Overview</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Integration</th>
+        <th><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Strength</a></th>
+        <th><a href="https://coupling.dev/posts/dimensions-of-coupling/distance/">Distance</a></th>
+        <th><a href="https://coupling.dev/posts/dimensions-of-coupling/volatility/">Volatility</a></th>
+        <th><a href="https://coupling.dev/posts/core-concepts/balance/">Balanced?</a></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>adapters.ConsoleGreeter</code> → <code>domain.ports.GreeterPort</code> (structural conformance)</td>
+        <td><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Contract</a> — but <strong>implicit / unenforced</strong></td>
+        <td>Cross-module, same package/process</td>
+        <td><strong>High</strong> (adopters add ports &amp; adapters constantly)</td>
+        <td>⚠️ <strong>No</strong> — implicit coupling in a volatile area</td>
+      </tr>
+      <tr>
+        <td><code>tests.FakeGreeter</code> → <code>domain.ports.GreeterPort</code> (structural conformance)</td>
+        <td><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Contract</a> — implicit / unenforced</td>
+        <td>Cross-module (tests ↔ src)</td>
+        <td><strong>High</strong></td>
+        <td>⚠️ <strong>No</strong> — same root cause as above</td>
+      </tr>
+      <tr>
+        <td><code>entrypoint.commands.greet</code> → <code>entrypoint.wiring.build_greeter</code></td>
+        <td><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Functional</a> — command performs its own composition</td>
+        <td>Same package</td>
+        <td>Moderate (grows with every new command)</td>
+        <td>⚠️ <strong>Partial</strong> — composition concern scatters as commands multiply</td>
+      </tr>
+      <tr>
+        <td><code>domain.use_cases.greet</code> → <code>domain.ports.GreeterPort</code> (<code>deliver</code> side effect)</td>
+        <td><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Functional</a> — computation + I/O orchestration fused</td>
+        <td>Same module</td>
+        <td>Low (for the example)</td>
+        <td>▲ Balanced today; pattern risk at scale</td>
+      </tr>
+      <tr>
+        <td><code>entrypoint.commands.greet</code> → <code>domain.use_cases</code> / <code>domain.models</code></td>
+        <td><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Model</a> — shares <code>GreetingRequest</code>/<code>Greeting</code></td>
+        <td>Cross-module, same process</td>
+        <td>Moderate</td>
+        <td>✅ Balanced</td>
+      </tr>
+      <tr>
+        <td><code>entrypoint.wiring.build_greeter</code> → <code>adapters.ConsoleGreeter</code></td>
+        <td><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Model</a> — constructs concrete, returns as port</td>
+        <td>Cross-module</td>
+        <td>Low</td>
+        <td>✅ Balanced (correct dependency inversion)</td>
+      </tr>
+      <tr>
+        <td><code>entrypoint.cli.main</code> → <code>domain.errors.DomainError</code> (catch-all → exit 1)</td>
+        <td><a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">Contract</a> — base-class catch only</td>
+        <td>Cross-module</td>
+        <td>Low</td>
+        <td>✅ Balanced (mapping isolated to one place)</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The last three rows are the template doing its job well and are recorded for completeness; the issues below cover the three flagged rows.</p>
+
+  <div class="issue">
+    <h2>Issue: The port↔adapter contract is implicit and unverified by the toolchain</h2>
+    <div class="issue-meta">
+      <strong>Integration</strong>: <code>adapters.ConsoleGreeter</code> (and <code>tests.FakeGreeter</code>) → <code>domain.ports.GreeterPort</code><br>
+      <strong>Severity</strong>: <span class="severity severity-significant">Significant</span>
+    </div>
+
+    <h3>Knowledge Leakage</h3>
+    <p>The whole point of a <code>typing.Protocol</code> port is to make the integration an <em>explicit</em> <a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">contract</a>: the domain publishes <code>GreeterPort.deliver(self, greeting: Greeting) -&gt; None</code>, and adapters conform structurally without inheriting. In principle this is the weakest, most desirable form of <a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">integration strength</a>.</p>
+    <p>The problem is <em>enforcement</em>. Structural conformance is asserted nowhere a machine can see it. <code>ConsoleGreeter</code> never references <code>GreeterPort</code>; <code>wiring.build_greeter()</code> returns it under the <code>GreeterPort</code> annotation, but no type checker runs against that site. The dev dependencies (<code>ruff</code>, <code>pytest</code>, <code>pytest-cov</code>, <code>tach</code>, <code>pre-commit</code>) contain <strong>no type checker</strong> (no <code>mypy</code>, <code>pyright</code>, or <code>ty</code>); CI runs <code>ruff check</code>, <code>ruff format --check</code>, <code>tach check</code>, <code>pytest</code>; pre-commit runs <code>ruff</code> + <code>tach</code>. <code>tach</code> enforces <em>import direction</em> (<code>domain</code> may not import <code>adapters</code>), not <em>type conformance</em>. The result: a contract that <em>looks</em> explicit is in practice <strong>implicit</strong> — its satisfaction is a human promise. Implicit coupling that should be explicit is the dangerous kind, because the integration point is invisible until it breaks at runtime.</p>
+
+    <h3>Complexity Impact</h3>
+    <p>Implicit coupling makes change outcomes unpredictable, which is the definition of <a href="https://coupling.dev/posts/core-concepts/complexity/">complexity</a>. When the shared knowledge (the port signature) is not machine-checked, a developer editing the port has no signal telling them which adapters and test doubles must move in lockstep. They must hold the full set of conformers in their head — and the working-memory budget of 4±1 items is exhausted the moment a real project has a handful of ports each with two or three adapters plus fakes. The template <em>teaches</em> a pattern whose safety net is missing, so every project cloned from it inherits the blind spot.</p>
+
+    <h3>Cascading Changes</h3>
+    <ul>
+      <li>A developer renames <code>deliver</code> to <code>emit</code>, or changes its signature to <code>deliver(self, greeting: Greeting, *, stream) -&gt; None</code>. <code>ConsoleGreeter</code> and <code>FakeGreeter</code> still <em>parse</em> and still <em>import-check</em> under <code>tach</code>. The unit tests pass (they call the fake directly), and the break only surfaces when the real CLI path executes the stale adapter at runtime — an <code>AttributeError</code>/<code>TypeError</code> discovered in production rather than in CI.</li>
+      <li>An adopter adds a second adapter (<code>LoggingGreeter</code>) and forgets one method, or gets an argument name wrong. Nothing fails until that adapter is wired and invoked.</li>
+    </ul>
+    <p>Because the integration lives in the template's <strong>highest-volatility</strong> region — adding ports/adapters is the primary growth activity under "varies widely" adoption — these silent breaks are not rare edge cases; they are the expected failure mode of the template's day-to-day use.</p>
+
+    <h3>Recommended Improvement</h3>
+    <p>Make the existing contract <em>explicit to tooling</em> rather than changing the design — the <a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">strength</a> is already where you want it; only its verification is missing.</p>
+    <ol>
+      <li>Add a static type checker (<code>ty</code>, <code>mypy</code>, or <code>pyright</code>) to the dev dependencies, the pre-commit hooks, and the CI workflow, configured to check <code>src/</code> <em>and</em> <code>tests/</code>. This turns structural conformance into a checked, build-breaking contract — closing the gap without raising strength or distance.</li>
+      <li>Optionally, add one assertion site that pins the relationship the type checker keys on — e.g. in <code>wiring.py</code> the return is already annotated <code>-&gt; GreeterPort</code>, so a checker will flag a non-conforming <code>ConsoleGreeter</code> there. Document in the "how to add a command" recipe that <em>every</em> adapter must be returned through a <code>GreeterPort</code>-annotated factory so the checker has an anchor.</li>
+    </ol>
+    <p><strong>Trade-off</strong>: a type checker adds a CI step, some annotation discipline, and occasional friction with dynamic code. For a template that markets itself on ports &amp; adapters correctness, that cost is plainly worth it — without it, the headline feature is unguarded precisely where adopters lean on it hardest.</p>
+  </div>
+
+  <div class="issue">
+    <h2>Issue: Composition is performed inside commands, fragmenting the composition root</h2>
+    <div class="issue-meta">
+      <strong>Integration</strong>: <code>entrypoint.commands.greet.run</code> → <code>entrypoint.wiring.build_greeter</code><br>
+      <strong>Severity</strong>: <span class="severity severity-significant">Significant</span>
+    </div>
+
+    <h3>Knowledge Leakage</h3>
+    <p><code>wiring.py</code>'s own docstring states its purpose: <em>"Centralizar el wiring aqui permite cambiar adapters … modificando un unico archivo."</em> But the <em>selection and construction</em> of the adapter happens inside <code>greet.run()</code>, which calls <code>build_greeter()</code> itself. The command therefore carries <a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">functional</a> knowledge — "to greet, you assemble a greeter" — that the design intends to keep in the composition root. Step 6 of the README recipe instructs every new command to call its own <code>build_*()</code> inside <code>run()</code>, so this is a <em>prescribed</em> pattern, not a one-off.</p>
+
+    <h3>Complexity Impact</h3>
+    <p>For a single command the duplication is invisible. The cost appears as commands multiply: the composition root is no longer a place, it is a scattering of <code>build_*()</code> calls across N command modules. Any cross-cutting change to <em>how</em> dependencies are assembled (environment-based adapter selection, swapping in test doubles at the boundary, threading a shared resource like an HTTP client or DB session through several commands) must be reasoned about across every command file rather than in one root — exceeding the cognitive budget the centralized-wiring design was meant to protect. This is <a href="https://coupling.dev/posts/core-concepts/balance/">low cohesion</a> of the composition concern: a single responsibility (object assembly) smeared across many low-volatility command modules.</p>
+
+    <h3>Cascading Changes</h3>
+    <ul>
+      <li>Adopter wants all commands to use a <code>LoggingGreeter</code> in one environment and <code>ConsoleGreeter</code> in another. With composition inlined per command, the conditional must be added to (or imported into) each command, or each <code>build_*</code> must grow environment logic. With a true root, it is one change.</li>
+      <li>Adopter wants integration tests to inject fakes at the composition boundary instead of monkeypatching. Today there is no single seam to inject at — each command reaches into <code>wiring</code> on its own.</li>
+    </ul>
+    <p>The distance between the scattered call sites is low (same package), so the changes are not <em>expensive</em> per file — but they are <em>many</em> and <em>repetitive</em>, which is exactly the drift toward a <a href="https://coupling.dev/posts/core-concepts/balance/">big ball of mud</a> that low cohesion produces.</p>
+
+    <h3>Recommended Improvement</h3>
+    <p>Keep <code>wiring.py</code> as the composition root and stop commands from constructing their own dependencies. Two viable shapes:</p>
+    <ul>
+      <li><strong>Inject the port into the command</strong>: have <code>cli.py</code> (the true root) build the greeter via <code>wiring</code> and pass it to <code>run(greeter, name=...)</code>, so the command receives its collaborators rather than fetching them. Distance and strength stay low; the composition concern returns to one place.</li>
+      <li><strong>Or</strong> make <code>wiring.py</code> expose a single <code>build_dependencies()</code>/container that <code>cli.py</code> assembles once at startup and hands to commands.</li>
+    </ul>
+    <p><strong>Trade-off</strong>: Typer commands receiving injected dependencies need a small amount of plumbing (a partial, a closure, or a context object) because Typer wants to own the callback signature. That is a modest, one-time cost in the template's <code>cli.py</code>, paid back every time an adopter adds a command or needs an environment-specific or test wiring — and it makes the template's stated "single file to swap adapters" promise actually true.</p>
+  </div>
+
+  <div class="issue">
+    <h2>Issue: Use cases fuse pure computation with output delivery</h2>
+    <div class="issue-meta">
+      <strong>Integration</strong>: <code>domain.use_cases.greet</code> → <code>domain.ports.GreeterPort.deliver</code><br>
+      <strong>Severity</strong>: <span class="severity severity-minor">Minor</span>
+    </div>
+
+    <h3>Knowledge Leakage</h3>
+    <p><code>greet()</code> both <em>computes</em> the result (<code>Greeting(message=f"Hola, {name}!")</code>) and <em>performs the side effect</em> (<code>greeter.deliver(greeting)</code>) before returning. The pure transformation and the I/O orchestration are <a href="https://coupling.dev/posts/dimensions-of-coupling/integration-strength/">functionally coupled</a> inside one function. A use case can no longer be evaluated for its result without also triggering delivery through whatever port is supplied.</p>
+
+    <h3>Complexity Impact</h3>
+    <p>At the current size this is fully <a href="https://coupling.dev/posts/core-concepts/balance/">balanced</a> — the distance is a single module and the example's volatility is negligible. The concern is that, as the <em>documented pattern of the template</em>, it pushes output orchestration into the domain. A use case that wants to call another use case inherits its delivery side effect; composing two domain operations forces a decision about which deliveries fire. That is how I/O responsibilities accrete in a layer that is supposed to stay pure and composable.</p>
+
+    <h3>Cascading Changes</h3>
+    <ul>
+      <li>An adopter adds a <code>report</code> use case that internally needs <code>greet</code>'s computed message but should emit it through a <em>different</em> channel (a file, an aggregated report). Today they cannot reuse <code>greet</code> without also triggering its <code>deliver</code>; they must duplicate the message-building logic or refactor the side effect out under pressure.</li>
+    </ul>
+
+    <h3>Recommended Improvement</h3>
+    <p>This is a <em>pattern</em> recommendation for the template, not an urgent fix to the example. Consider establishing the convention that <strong>use cases return domain results and the entrypoint performs delivery</strong> — i.e. <code>greet()</code> returns <code>Greeting</code>, and <code>commands/greet.py</code> (or the injected port from the previous issue) calls <code>deliver</code>. Keep <code>deliver</code>-from-use-case available where a use case genuinely orchestrates streaming/long-running output, but make "compute, return, let the edge render" the default the recipe teaches.</p>
+    <p><strong>Trade-off</strong>: moving delivery to the edge means the entrypoint, not the use case, owns the "and then show it" step — a slightly thicker command layer. Given that the template's purpose is to model clean separation for arbitrary adopters, teaching composable pure use cases is worth that small shift. Because the imbalance is low-volatility today, this can be addressed opportunistically rather than urgently.</p>
+  </div>
+
+  <div class="footer">
+    <p><em>This analysis was performed using the <a href="https://coupling.dev">Balanced Coupling</a> model by <a href="https://vladikk.com">Vlad Khononov</a>.</em></p>
+  </div>
+</div>
+
+<script>
+  function getDefaultTheme() {
+    const hour = new Date().getHours();
+    return (hour >= 7 && hour < 19) ? 'light' : 'dark';
+  }
+
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('modularity-review-theme', theme);
+    document.getElementById('theme-icon').textContent = theme === 'light' ? '☾' : '☀';
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme');
+    setTheme(current === 'light' ? 'dark' : 'light');
+  }
+
+  const saved = localStorage.getItem('modularity-review-theme');
+  setTheme(saved || getDefaultTheme());
+</script>
+</body>
+</html>

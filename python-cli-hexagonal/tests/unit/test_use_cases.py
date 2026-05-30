@@ -1,27 +1,24 @@
-"""Tests unitarios del use case `greet` con un fake adapter."""
+"""Tests unitarios del caso de uso puro `greet`."""
 
 import pytest
 
-from app.domain.errors import EmptyNameError
-from app.domain.models import GreetingRequest
-from app.domain.use_cases import greet
+from app.domain.model.greeting.models import Greeting, GreetingRequest
+from app.domain.usecase.greet.errors import EmptyNameError
+from app.domain.usecase.greet.use_case import greet
 
 
-def test_greet_delivers_message(fake_greeter):
-    result = greet(GreetingRequest(name="Ada"), fake_greeter)
+def test_greet_builds_message():
+    result = greet(GreetingRequest(name="Ada"))
+
+    assert result == Greeting(message="Hola, Ada!")
+
+
+def test_greet_trims_whitespace():
+    result = greet(GreetingRequest(name="  Ada  "))
 
     assert result.message == "Hola, Ada!"
-    assert len(fake_greeter.delivered) == 1
-    assert fake_greeter.delivered[0].message == "Hola, Ada!"
 
 
-def test_greet_trims_whitespace(fake_greeter):
-    result = greet(GreetingRequest(name="  Ada  "), fake_greeter)
-    assert result.message == "Hola, Ada!"
-
-
-def test_greet_rejects_empty_name(fake_greeter):
+def test_greet_rejects_empty_name():
     with pytest.raises(EmptyNameError):
-        greet(GreetingRequest(name="   "), fake_greeter)
-
-    assert fake_greeter.delivered == []
+        greet(GreetingRequest(name="   "))

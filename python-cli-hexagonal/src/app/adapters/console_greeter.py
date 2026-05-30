@@ -4,14 +4,14 @@ from dataclasses import dataclass
 
 import typer
 
-from app.domain.models import Greeting
+from app.domain.model.greeting.models import Greeting
 
 
 @dataclass(frozen=True, slots=True)
 class ConsoleGreeter:
     """Entrega saludos a stdout coloreados con Typer.
 
-    Cumple estructuralmente con `app.domain.ports.GreeterPort`.
+    Cumple estructuralmente con `app.domain.model.greeting.gateways.GreeterPort`.
 
     Attributes:
         color: Color de Typer aplicado al texto del saludo.

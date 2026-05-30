@@ -5,6 +5,10 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  - repo: https://github.com/astral-sh/ty-pre-commit
+    rev: v0.0.1a16
+    hooks:
+      - id: ty
   - repo: https://github.com/gauge-sh/tach-pre-commit
     rev: v0.20.0
     hooks:

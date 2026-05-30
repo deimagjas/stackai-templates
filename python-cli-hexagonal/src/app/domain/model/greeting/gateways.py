@@ -1,13 +1,12 @@
-"""Puertos: contratos que el dominio espera del exterior.
+"""Gateways del modelo `greeting`: contratos que el dominio espera del exterior.
 
 Usamos `typing.Protocol` (tipado estructural) para que los adapters no
-necesiten heredar explicitamente. Esto mantiene el dominio desacoplado
-de las implementaciones concretas.
+necesiten heredar explicitamente. El gateway vive junto al modelo que sirve.
 """
 
 from typing import Protocol
 
-from app.domain.models import Greeting
+from app.domain.model.greeting.models import Greeting
 
 
 class GreeterPort(Protocol):
