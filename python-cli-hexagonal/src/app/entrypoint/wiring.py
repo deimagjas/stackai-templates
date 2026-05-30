@@ -5,19 +5,23 @@ adapters. Cambiar un adapter (por ejemplo, swap a uno de logging o de
 tests) se hace modificando este unico archivo.
 """
 
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 from app.adapters.console_greeter import ConsoleGreeter
 from app.domain.model.greeting.gateways import GreeterPort
 
 
-@dataclass(frozen=True, slots=True)
-class Dependencies:
+class Dependencies(BaseModel):
     """Contenedor de puertos concretos resueltos para la ejecucion.
+
+    Es un modelo pydantic inmutable: valida en construccion que cada
+    puerto inyectado cumpla su `Protocol` (via `runtime_checkable`).
 
     Attributes:
         greeter: Implementacion de `GreeterPort` para entregar saludos.
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     greeter: GreeterPort
 
