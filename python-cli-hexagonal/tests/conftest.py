@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from app.domain.models import Greeting
+from app.domain.model.greeting.models import Greeting
 
 
 @dataclass

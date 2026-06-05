@@ -21,13 +21,31 @@ code review.
 Estas reglas las **fuerza `tach check`**. No deben relajarse:
 
 - `app.domain` **nunca** importa de `app.adapters` ni `app.entrypoint`.
+- `app.domain.model` no importa de ninguna otra capa (ni siquiera del
+  kernel `app.domain`).
+- `app.domain.usecase` depende **solo** de `app.domain.model` y del
+  kernel `app.domain`; nunca al reves (`model` no conoce `usecase`).
 - `app.adapters` no importa de `app.entrypoint`.
 - No se permiten dependencias circulares entre módulos.
-- Cualquier paquete nuevo bajo `src/app/` debe declararse en
-  `tach.toml` con sus `depends_on` explícitos.
+- Una **capa nueva** de primer nivel bajo `src/app/` debe declararse en
+  `tach.toml` con sus `depends_on` explícitos. Las features nuevas
+  dentro de `model/` o `usecase/` no requieren tocar `tach.toml`.
 
 Reglas adicionales no automatizadas:
 
+- El **gateway (puerto) vive junto a su modelo** en
+  `domain/model/<feature>/gateways.py`, no en un módulo de puertos
+  aparte.
+- Los **use cases son puros**: reciben la solicitud y **retornan** un
+  resultado de dominio. **No** entregan IO (no llaman al puerto). La
+  entrega ocurre en `entrypoint/`.
+- Los **errores específicos** de una feature viven junto a su use case
+  (`domain/usecase/<feature>/errors.py`) y heredan de
+  `app.domain.errors.DomainError` (kernel compartido).
+- El **composition root es único**: `wiring.build_dependencies` es el
+  único lugar donde se instancian adapters; se invoca una sola vez en el
+  callback raíz de `entrypoint/cli.py` y se inyecta vía `ctx.obj`. Los
+  comandos **no** construyen dependencias.
 - Las dependencias externas (typer, requests, sqlalchemy, etc.) viven
   solo en `adapters/` o `entrypoint/`, **nunca** en `domain/`.
 - Los fakes/mocks de test viven en `tests/conftest.py` o en archivos
@@ -35,6 +53,15 @@ Reglas adicionales no automatizadas:
 - El mapeo de excepciones de dominio al canal de salida (códigos de
   salida, colores, formatos) vive **solo** en `entrypoint/cli.py`. El
   dominio no conoce `typer.Exit`.
+
+### Verificación de tipos (`ty`)
+
+- La conformidad estructural de los adapters con el `Protocol` de su
+  gateway la verifica **`ty check`** (no `ruff` ni `tach`). Es parte del
+  toolchain obligatorio (pre-commit + CI).
+- El ancla de conformidad es `wiring.py`: cada adapter se devuelve
+  tipado como su puerto, de modo que `ty` detecta cualquier divergencia
+  de firma antes de runtime.
 
 ## 2. Power features prohibidas (Google §2.19)
 
@@ -159,8 +186,10 @@ reglas son cualitativas:
 Cuando se añada un nuevo caso de uso o adapter:
 
 1. Seguir los pasos de "Cómo añadir un nuevo comando" del README.
-2. Si se introduce un paquete nuevo bajo `src/app/`, registrarlo en
-   `tach.toml` con sus `depends_on` explícitos. Sin esto, `tach check`
-   falla.
-3. **Nunca** añadir `app.adapters` o `app.entrypoint` a `depends_on`
-   de `app.domain`. Esa es la invariante que protege la arquitectura.
+2. Las features nuevas dentro de `domain/model/` o `domain/usecase/` no
+   requieren tocar `tach.toml` (pertenecen a la capa ya declarada). Solo
+   si se introduce una **capa nueva** de primer nivel bajo `src/app/`
+   hay que registrarla con sus `depends_on` explícitos.
+3. **Nunca** invertir el flujo de capas: `model` no depende de
+   `usecase`, y `domain` no depende de `adapters` ni `entrypoint`. Esa
+   es la invariante que protege la arquitectura.

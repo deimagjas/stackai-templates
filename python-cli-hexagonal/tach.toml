@@ -8,9 +8,17 @@ path = "app.domain"
 depends_on = []
 
 [[modules]]
+path = "app.domain.model"
+depends_on = []
+
+[[modules]]
+path = "app.domain.usecase"
+depends_on = ["app.domain.model", "app.domain"]
+
+[[modules]]
 path = "app.adapters"
-depends_on = ["app.domain"]
+depends_on = ["app.domain.model"]
 
 [[modules]]
 path = "app.entrypoint"
-depends_on = ["app.adapters", "app.domain"]
+depends_on = ["app.adapters", "app.domain.model", "app.domain.usecase", "app.domain"]

@@ -4,18 +4,19 @@ from typing import Annotated
 
 import typer
 
-from app.domain.models import GreetingRequest
-from app.domain.use_cases import greet
-from app.entrypoint.wiring import build_greeter
+from app.domain.model.greeting.models import GreetingRequest
+from app.domain.usecase.greet.use_case import greet
+from app.entrypoint.wiring import Dependencies
 
 
 def run(
+    ctx: typer.Context,
     name: Annotated[
         str,
         typer.Option("--name", "-n", help="Nombre del destinatario."),
     ] = "Mundo",
 ) -> None:
     """Saluda al destinatario indicado."""
-    greeter = build_greeter()
-    request = GreetingRequest(name=name)
-    greet(request, greeter)
+    deps: Dependencies = ctx.obj
+    greeting = greet(GreetingRequest(name=name))
+    deps.greeter.deliver(greeting)

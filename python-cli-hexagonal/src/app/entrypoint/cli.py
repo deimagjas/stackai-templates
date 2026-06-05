@@ -6,6 +6,7 @@ import typer
 
 from app.domain.errors import DomainError
 from app.entrypoint.commands import greet as greet_cmd
+from app.entrypoint.wiring import build_dependencies
 
 app = typer.Typer(
     name="app",
@@ -16,8 +17,9 @@ app = typer.Typer(
 
 
 @app.callback()
-def _root() -> None:
-    """Punto de entrada raiz (placeholder para flags globales futuros)."""
+def _root(ctx: typer.Context) -> None:
+    """Construye las dependencias una sola vez (composition root)."""
+    ctx.obj = build_dependencies()
 
 
 app.command(name="greet")(greet_cmd.run)

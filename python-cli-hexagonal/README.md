@@ -6,27 +6,49 @@ hexagonal** (ports & adapters), inspirada en el ejemplo de
 pero adaptada a una interfaz de línea de comandos con **Typer**.
 
 Gestiona dependencias con **uv**, aplica lint y format con **ruff**
-(reglas alineadas al Google Python Style Guide) y protege la
+(reglas alineadas al Google Python Style Guide), verifica tipos y la
+conformidad estructural de los puertos con **ty**, y protege la
 arquitectura con **tach** (equivalente Python de ArchUnit).
 
 ## Arquitectura
 
+El dominio se organiza en dos capas al estilo del scaffold de
+[Bancolombia](https://bancolombia.github.io/scaffold-clean-architecture/):
+una capa `model/` donde cada modelo vive en su propio paquete junto a su
+*gateway* (puerto), y una capa `usecase/` separada que depende de los
+modelos.
+
 ```
-           +-----------------------------+
-           |        entrypoint/          |  CLI (Typer), wiring, error map
-           +--------------+--------------+
-                          | depende de
-           +--------------v--------------+
-           |          domain/            |  modelos, puertos, use cases
-           +--------------+--------------+
-                          ^ implementa (estructuralmente)
-           +--------------+--------------+
-           |         adapters/           |  IO concreto (consola, fs, http)
-           +-----------------------------+
+           +-----------------------------------+
+           |            entrypoint/            |  CLI (Typer), composition
+           |                                  |  root, mapeo de errores
+           +----------------+-----------------+
+                            | depende de
+           +----------------v-----------------+
+           |       domain/usecase/           |  funciones puras; retornan
+           |                                  |  resultados de dominio
+           +----------------+-----------------+
+                            | depende de
+           +----------------v-----------------+
+           |        domain/model/            |  entidades + gateways
+           |                                  |  (puertos) por feature
+           +----------------+-----------------+
+                            ^ implementa (estructuralmente)
+           +----------------+-----------------+
+           |            adapters/             |  IO concreto (consola, fs)
+           +-----------------------------------+
 ```
 
-**Regla de oro:** `domain/` no importa de `adapters/` ni de
-`entrypoint/`. `tach check` lo verifica en cada commit y en CI.
+**Reglas de oro** (verificadas por `tach check` en cada commit y en CI):
+
+- `domain/model/` no importa de ninguna otra capa.
+- `domain/usecase/` depende solo de `domain/model/` (y del kernel
+  compartido `domain/errors.py`), nunca al reves.
+- `domain/` nunca importa de `adapters/` ni de `entrypoint/`.
+
+Los **use cases son puros**: construyen y retornan un resultado de
+dominio; la entrega por un puerto (p. ej. escribir a consola) ocurre en
+el `entrypoint/`, no en el dominio.
 
 ## Estructura de directorios
 
@@ -40,15 +62,20 @@ python-cli-hexagonal/
 ├── .github/workflows/ci.yml       # lint + format + tach + pytest
 ├── src/app/
 │   ├── domain/                    # NÚCLEO puro, sin dependencias externas
-│   │   ├── ports.py               # typing.Protocol → GreeterPort
-│   │   ├── models.py              # @dataclass(frozen=True)
-│   │   ├── use_cases.py           # funciones puras
-│   │   └── errors.py              # DomainError jerarquía
+│   │   ├── errors.py              # DomainError base (shared kernel)
+│   │   ├── model/                 # capa de modelos: entidad + gateway
+│   │   │   └── greeting/
+│   │   │       ├── models.py      # @dataclass(frozen=True)
+│   │   │       └── gateways.py    # typing.Protocol → GreeterPort
+│   │   └── usecase/               # capa de casos de uso (puros)
+│   │       └── greet/
+│   │           ├── use_case.py    # greet(request) -> Greeting
+│   │           └── errors.py      # EmptyNameError(DomainError)
 │   ├── adapters/                  # implementaciones concretas
 │   │   └── console_greeter.py
 │   └── entrypoint/                # composition root + CLI Typer
 │       ├── cli.py                 # typer.Typer() + mapeo DomainError
-│       ├── wiring.py              # factories de puertos
+│       ├── wiring.py              # Dependencies + build_dependencies()
 │       ├── __main__.py            # python -m app.entrypoint
 │       └── commands/
 │           └── greet.py           # subcomando `greet`
@@ -94,8 +121,9 @@ uv run app greet --name "   "
 uv run pytest
 ```
 
-Coverage activo por defecto. Tests divididos en `unit/` (dominio + fake
-adapter) e `integration/` (CLI end-to-end con `CliRunner`).
+Coverage activo por defecto. Tests divididos en `unit/` (use case puro y
+entrega vía fake adapter) e `integration/` (CLI end-to-end con
+`CliRunner`).
 
 ## Lint y format
 
@@ -108,6 +136,18 @@ uv run ruff format .         # formatea
 Las reglas de `ruff` están alineadas al Google Python Style Guide. Las
 reglas del guide que ruff no puede expresar están en
 [`CLAUDE.md`](./CLAUDE.md) y deben respetarse en code review.
+
+## Type checking
+
+```bash
+uv run ty check              # verifica tipos y conformidad de puertos
+```
+
+`ty` (de Astral, mismo ecosistema que `uv` y `ruff`) comprueba que cada
+adapter satisface estructuralmente el `Protocol` de su gateway. Sin esto,
+un cambio en la firma de un puerto pasaría lint y tests y solo fallaría
+en runtime. La conformidad se ancla en `wiring.py`, donde el adapter se
+devuelve tipado como el puerto.
 
 ## Enforcement arquitectónico
 
@@ -131,20 +171,36 @@ A partir de ahí, cada `git commit` corre ruff + tach.
 
 ## Cómo añadir un nuevo comando
 
-1. Definir el contrato en `src/app/domain/ports.py` (nuevo `Protocol`)
-   si el comando necesita un canal de IO nuevo.
-2. Añadir modelos en `src/app/domain/models.py`.
-3. Escribir el use case puro en `src/app/domain/use_cases.py`.
-4. Implementar el adapter en `src/app/adapters/<nombre>.py`.
-5. Registrar la factory del adapter en `src/app/entrypoint/wiring.py`.
-6. Crear el subcomando en
-   `src/app/entrypoint/commands/<nombre>.py` con una función `run(...)`.
-7. Registrarlo en `src/app/entrypoint/cli.py`:
+1. Crear el paquete de modelo en
+   `src/app/domain/model/<feature>/`:
+   - `models.py` con los `@dataclass(frozen=True)` de la feature.
+   - `gateways.py` con el `Protocol` del puerto, **junto al modelo**,
+     si el comando necesita un canal de IO nuevo.
+2. Crear el paquete de caso de uso en
+   `src/app/domain/usecase/<feature>/`:
+   - `use_case.py` con una **función pura** que reciba la solicitud y
+     **retorne** un resultado de dominio (no entrega IO).
+   - `errors.py` con los errores específicos de la feature, que heredan
+     de `app.domain.errors.DomainError`.
+3. Implementar el adapter en `src/app/adapters/<nombre>.py` que cumpla
+   estructuralmente el `Protocol` del gateway.
+4. Añadir el puerto como campo de `Dependencies` y construirlo en
+   `build_dependencies()` dentro de `src/app/entrypoint/wiring.py`
+   (composition root único).
+5. Crear el subcomando en
+   `src/app/entrypoint/commands/<nombre>.py` con una función
+   `run(ctx: typer.Context, ...)` que: lea `ctx.obj` (las
+   `Dependencies`), invoque el use case puro y luego entregue el
+   resultado por el puerto.
+6. Registrarlo en `src/app/entrypoint/cli.py`:
    `app.command(name="<nombre>")(<nombre>_cmd.run)`.
-8. Tests: unitarios con fake adapter en `tests/unit/`; integración con
+7. Tests: unitarios del use case puro (afirman sobre el valor retornado)
+   y del puerto con un fake en `tests/unit/`; integración con
    `CliRunner` en `tests/integration/`.
-9. Si el comando introduce un **paquete nuevo** bajo `src/app/`,
-   añadirlo a `tach.toml` con sus `depends_on` explícitos.
+8. **No** suele hacer falta tocar `tach.toml`: las features nuevas viven
+   dentro de las capas ya declaradas (`app.domain.model`,
+   `app.domain.usecase`). Solo se añade a `tach.toml` si introduces una
+   **capa nueva** de primer nivel bajo `src/app/`.
 
 ## Cómo renombrar el paquete `app`
 
@@ -175,9 +231,10 @@ uv run <tu_nombre> greet --name Mundo
 uv sync
 uv run app greet --name Mundo           # → "Hola, Mundo!" verde, exit 0
 uv run app greet --name "   "           # → "Error: ..."   rojo,  exit 1
-uv run pytest                            # 5 tests passing
+uv run pytest                            # 6 tests passing
 uv run ruff check .                      # All checks passed!
 uv run ruff format --check .             # sin cambios pendientes
+uv run ty check                          # All checks passed!
 uv run tach check                        # ✓ All modules validated!
 uv build                                 # genera dist/app-0.1.0-*.whl
 ```

@@ -1,4 +1,4 @@
-"""Modelos de dominio inmutables."""
+"""Modelos de dominio inmutables del saludo."""
 
 from dataclasses import dataclass
 
