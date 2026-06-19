@@ -26,11 +26,23 @@ app.command(name="greet")(greet_cmd.run)
 
 
 def main() -> None:
-    """Mapea `DomainError` a exit code 1 con mensaje rojo en stderr."""
+    """Mapea errores a exit code 1 con mensaje rojo en stderr.
+
+    `DomainError` se reporta con su mensaje (es seguro mostrarlo). Cualquier
+    otra excepcion es inesperada: se reporta con un mensaje generico para no
+    filtrar trazas ni detalles internos por el canal de salida.
+    """
     try:
         app()
     except DomainError as exc:
         typer.secho(f"Error: {exc}", fg=typer.colors.RED, err=True)
+        sys.exit(1)
+    except Exception:  # noqa: BLE001 - red de seguridad del entrypoint.
+        typer.secho(
+            "Error inesperado. Intentalo de nuevo.",
+            fg=typer.colors.RED,
+            err=True,
+        )
         sys.exit(1)
 
 
