@@ -1,15 +1,41 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.15.14
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  # KNOWN ISSUE: ty-pre-commit v0.0.40 hardcodes `ty check
+  # --ignore-active-virtual-env`, but the `ty==0.0.40` it pins does not
+  # support that flag (fixed upstream from v0.0.50 onward, which switched
+  # to a `uv check --ty-version=...` invocation - but that would run a
+  # different ty version than this project's own `ty==0.0.40`, causing
+  # drift between what CI/`uv run ty check` sees and what pre-commit sees).
+  # Until this project's `ty` pin is bumped, use `uv run ty check`
+  # directly (also what CI runs) rather than relying on this hook.
   - repo: https://github.com/astral-sh/ty-pre-commit
-    rev: v0.0.1a16
+    rev: v0.0.40
     hooks:
       - id: ty
+  # KNOWN ISSUE: pre-commit always runs hooks with cwd at the git
+  # worktree root. While this template lives nested inside the
+  # stackai-templates monorepo (rather than as its own repo, which is the
+  # intended end state after `cp -R python-cli-hexagonal/ ../new-project`),
+  # that root is stackai-templates/, not this directory, so `tach` cannot
+  # find tach.toml here. This resolves itself once the template is copied
+  # out to its own repository. Until then, use `uv run tach check`
+  # directly from this directory.
   - repo: https://github.com/gauge-sh/tach-pre-commit
     rev: v0.20.0
     hooks:
       - id: tach
+  - repo: local
+    hooks:
+      - id: crap-sensor
+        name: CRAP sensor
+        entry: >-
+          bash -c 'uv run pytest --cov=app --cov-report=json -q &&
+          uv run crap-sensor --source-dir src/app --coverage-json coverage.json'
+        language: system
+        pass_filenames: false
+        always_run: true

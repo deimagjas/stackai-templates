@@ -22,7 +22,12 @@ dev = [
     "pytest-cov>=5.0",
     "tach>=0.20",
     "pre-commit>=3.7",
+    "crap-sensor",
+    "mutmut>=3.0",
 ]
+
+[tool.uv.sources]
+crap-sensor = { path = "../../crap-sensor" }
 
 [build-system]
 requires = ["hatchling"]
@@ -115,3 +120,7 @@ root = ["./src"]
 
 [tool.ty.src]
 include = ["src", "tests"]
+
+# ---------- mutmut ----------
+[tool.mutmut]
+source_paths = ["src/app"]

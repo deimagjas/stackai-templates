@@ -55,11 +55,18 @@ el `entrypoint/`, no en el dominio.
 ```
 python-cli-hexagonal/
 ├── README.md                      # este archivo
-├── CLAUDE.md                      # reglas Google no expresables en ruff
+├── AGENTS.md                      # reglas Google no expresables en ruff
+│                                   # + harness inventory
+├── CLAUDE.md                      # importa AGENTS.md via @AGENTS.md
 ├── pyproject.toml                 # uv + typer + ruff + pytest + tach
 ├── tach.toml                      # boundaries arquitectónicos
 ├── .pre-commit-config.yaml        # ruff + tach pre-commit
-├── .github/workflows/ci.yml       # lint + format + tach + pytest
+├── .claude/skills/
+│   ├── tdd-harness/SKILL.md       # skill de desarrollo guiado por tests
+│   └── adversarial-review/SKILL.md # skill de revisión adversarial
+├── .github/workflows/
+│   ├── ci.yml                     # lint + format + tach + pytest
+│   └── mutation-testing.yml       # mutmut en CI
 ├── src/app/
 │   ├── domain/                    # NÚCLEO puro, sin dependencias externas
 │   │   ├── errors.py              # DomainError base (shared kernel)
@@ -135,7 +142,8 @@ uv run ruff format .         # formatea
 
 Las reglas de `ruff` están alineadas al Google Python Style Guide. Las
 reglas del guide que ruff no puede expresar están en
-[`CLAUDE.md`](./CLAUDE.md) y deben respetarse en code review.
+[`AGENTS.md`](./AGENTS.md) (que `CLAUDE.md` importa vía `@AGENTS.md`) y
+deben respetarse en code review.
 
 ## Type checking
 
@@ -168,6 +176,66 @@ uv run pre-commit install
 ```
 
 A partir de ahí, cada `git commit` corre ruff + tach.
+
+## Harness AI-native
+
+Esta plantilla incluye un **harness** pensado para que agentes de IA
+(y humanos) desarrollen con retroalimentación continua sobre la calidad
+del código, no solo sobre su corrección superficial. Las reglas y el
+inventario del harness viven en [`./AGENTS.md`](./AGENTS.md); las dos
+skills que lo operan están en
+[`.claude/skills/tdd-harness/SKILL.md`](./.claude/skills/tdd-harness/SKILL.md)
+y
+[`.claude/skills/adversarial-review/SKILL.md`](./.claude/skills/adversarial-review/SKILL.md);
+el diseño y la justificación del harness a nivel de repo están en
+[`../docs/harness/`](../docs/harness/).
+
+El harness combina dos tipos de señal: un **sensor computacional**
+(métricas deterministas como CRAP y mutation score, que dan
+**feedback** rápido y objetivo sobre qué código está mal probado) y un
+**sensor inferencial** (revisión adversarial por agente, que da
+**feedforward** sobre riesgos de diseño antes de que se conviertan en
+bugs). Ambos se ejecutan localmente y en CI para que ningún cambio
+dependa solo del juicio del autor.
+
+Comandos nuevos:
+
+```bash
+uv run crap-sensor --source-dir src/app --coverage-json coverage.json
+# → métrica CRAP (Change Risk Anti-Patterns) por función/módulo
+uv run mutmut run
+# → mutation testing: mata mutantes para validar que los tests
+#   realmente detectan regresiones, no solo que pasan
+```
+
+> **Nota sobre `crap-sensor`:** la dependencia declarada en
+> `pyproject.toml` apunta hoy a una **ruta local** (`../../crap-sensor`),
+> asumiendo que `crap-sensor` está clonado como hermano de
+> `stackai-templates` en `/Users/deimagjas/qubits.cloud/` en esta
+> máquina. Quien clone esta plantilla en otro entorno debe **o bien**
+> clonar `crap-sensor` también como directorio hermano en esa misma
+> ruta relativa, **o bien** reemplazar esa dependencia por una
+> referencia a PyPI o `git+https://...` una vez que el paquete esté
+> publicado. Tras cualquier cambio en `crap-sensor`, correr
+> `uv sync --reinstall-package crap-sensor` para que la plantilla recoja
+> el código actualizado (una dependencia de ruta local no se re-detecta
+> automáticamente con un `uv sync` normal).
+
+> **Nota sobre `mutmut` en macOS:** `mutmut` 3.x lanza cada mutante con
+> `os.fork()` directo (no `multiprocessing`). En esta plantilla, corrido
+> localmente en macOS (Python 3.13), **todos** los mutantes terminan como
+> `timeout` de forma uniforme, independientemente de su complejidad —
+> incluso probando con `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` (el
+> workaround estándar para crashes de `fork()` en macOS). El patrón
+> (timeout uniforme, no relacionado a la complejidad del mutante) apunta
+> a un deadlock en el hijo forkeado, no a tests genuinamente lentos — un
+> problema conocido de mezclar `os.fork()` con frameworks que usan hilos
+> en background (pytest/coverage), no algo corregible desde la
+> configuración de este proyecto. El workflow `mutation-testing.yml`
+> corre en `ubuntu-latest`, donde `fork()` no tiene esta fragilidad
+> específica de macOS — se espera que funcione en CI aunque no funcione
+> en desarrollo local en Mac; esto no se ha podido verificar aún sin
+> disparar el workflow en GitHub Actions.
 
 ## Cómo añadir un nuevo comando
 
@@ -236,5 +304,8 @@ uv run ruff check .                      # All checks passed!
 uv run ruff format --check .             # sin cambios pendientes
 uv run ty check                          # All checks passed!
 uv run tach check                        # ✓ All modules validated!
+uv run crap-sensor --source-dir src/app --coverage-json coverage.json
+                                          # → reporte CRAP por función
+uv run mutmut run                        # → mutation score
 uv build                                 # genera dist/app-0.1.0-*.whl
 ```

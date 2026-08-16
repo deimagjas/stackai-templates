@@ -5,7 +5,11 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 .coverage
+coverage.json
+.tach/
 htmlcov/
+mutants/
+.mutmut-cache
 dist/
 build/
 *.egg-info/
